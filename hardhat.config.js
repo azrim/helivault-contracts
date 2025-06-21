@@ -2,7 +2,7 @@ require("dotenv").config();
 require("@nomicfoundation/hardhat-toolbox");
 
 module.exports = {
-  solidity: "0.8.20",
+  solidity: "0.8.26", // Upgraded to a newer version
   networks: {
     helios: {
       url: "https://testnet1.helioschainlabs.org",
