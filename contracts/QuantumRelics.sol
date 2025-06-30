@@ -2,15 +2,17 @@
 pragma solidity ^0.8.26;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol"; // <-- IMPORT ADDED
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
 /**
  * @title QuantumRelics
- * @dev An ERC721 contract where all NFTs share a single image and metadata.
+ * @dev An ERC721 contract with enumerable functions for history tracking.
  */
-contract QuantumRelics is ERC721, Ownable, ERC2981 {
+// Inherit from ERC721Enumerable
+contract QuantumRelics is ERC721, ERC721Enumerable, Ownable, ERC2981 {
     // --- Custom Errors ---
     error SaleNotActive();
     error NotWhitelisted();
@@ -92,7 +94,23 @@ contract QuantumRelics is ERC721, Ownable, ERC2981 {
         _setDefaultRoyalty(receiver, feeNumerator);
     }
     
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC2981) returns (bool) {
+    // --- Overrides for Enumerable ---
+    function _update(address to, uint256 tokenId, address auth)
+        internal
+        override(ERC721, ERC721Enumerable)
+        returns (address)
+    {
+        return super._update(to, tokenId, auth);
+    }
+
+    function _increaseBalance(address account, uint128 value)
+        internal
+        override(ERC721, ERC721Enumerable)
+    {
+        super._increaseBalance(account, value);
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable, ERC2981) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
     
