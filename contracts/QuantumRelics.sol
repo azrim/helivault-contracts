@@ -164,6 +164,10 @@ contract QuantumRelics is ERC721, ERC721Enumerable, Ownable, ERC2981, Reentrancy
         hlvToken.transfer(msg.sender, totalRewards);
         emit RewardsClaimed(msg.sender, totalRewards);
     }
+
+    function getStakedTokenIds(address user) public view returns (uint256[] memory) {
+        return userStakedTokenIds[user];
+    }
     
     // --- Royalties ---
     function setRoyalty(address receiver, uint96 feeNumerator) public onlyOwner {
