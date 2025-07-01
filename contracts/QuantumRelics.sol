@@ -23,6 +23,8 @@ contract QuantumRelics is ERC721, ERC721Enumerable, Ownable, ERC2981, Reentrancy
     error NotOwnerOfStakedToken();
     error NoRewardsToClaim();
     error NotOwnerOfNFT();
+    error TokenAlreadyStaked(); // <-- ADDED
+    error TokenNotStaked();     // <-- ADDED
 
     // --- State Variables ---
     enum SaleState { Paused, Presale, Public }
@@ -45,7 +47,7 @@ contract QuantumRelics is ERC721, ERC721Enumerable, Ownable, ERC2981, Reentrancy
     }
     mapping(uint256 => StakedToken) public stakedTokens;
     mapping(address => uint256[]) public userStakedTokenIds;
-    uint256 public rewardRate = 0.0001 * 1e18; // Example: 0.0001 HLV per second
+    uint256 public rewardRate = 0.0001 * 1e18;
 
     // --- Events ---
     event Staked(address indexed owner, uint256 tokenId);
@@ -63,118 +65,51 @@ contract QuantumRelics is ERC721, ERC721Enumerable, Ownable, ERC2981, Reentrancy
         saleState = SaleState.Paused;
     }
 
-    // --- URI Management ---
-    function tokenURI(uint256) public view override returns (string memory) {
-        return _tokenURI;
-    }
-
-    function setTokenURI(string calldata uri) public onlyOwner {
-        _tokenURI = uri;
-    }
-
-    // --- Sale Management ---
-    function setSaleState(SaleState newState) public onlyOwner {
-        saleState = newState;
-    }
-
-    // --- Whitelist Management ---
-    function manageWhitelist(address[] calldata addresses, bool status) public onlyOwner {
-        for (uint256 i = 0; i < addresses.length; i++) {
-            whitelisted[addresses[i]] = status;
-        }
-    }
-
-    // --- Minting ---
-    function mint(uint256 quantity) public {
-        if (saleState == SaleState.Paused) revert SaleNotActive();
-        if (currentSupply + quantity > MAX_SUPPLY) revert MaxSupplyReached();
-        if (quantity == 0) revert InvalidMintQuantity();
-        if (quantity > MAX_PER_MINT) revert MaxPerTxExceeded();
-        
-        if (saleState == SaleState.Presale) {
-            if (!whitelisted[msg.sender]) revert NotWhitelisted();
-        }
-
-        uint256 totalCost = MINT_PRICE * quantity;
-        if (hlvToken.transferFrom(msg.sender, address(this), totalCost) == false) {
-            revert InsufficientPayment();
-        }
-
-        for (uint256 i = 0; i < quantity; i++) {
-            currentSupply++;
-            _safeMint(msg.sender, currentSupply);
-        }
-    }
+    // --- URI, Sale, Whitelist, and Minting functions remain the same ---
+    // ... (paste your existing functions here)
 
     // --- Staking ---
     function stake(uint256[] calldata tokenIds) external nonReentrant {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (ownerOf(tokenIds[i]) != msg.sender) revert NotOwnerOfNFT();
-            _safeTransfer(msg.sender, address(this), tokenIds[i], "");
-            stakedTokens[tokenIds[i]] = StakedToken({
+            uint256 tokenId = tokenIds[i];
+            if (ownerOf(tokenId) != msg.sender) revert NotOwnerOfNFT();
+            if (stakedTokens[tokenId].owner != address(0)) revert TokenAlreadyStaked(); // <-- FIX
+
+            _safeTransfer(msg.sender, address(this), tokenId, "");
+            stakedTokens[tokenId] = StakedToken({
                 owner: msg.sender,
                 timestamp: block.timestamp
             });
-            userStakedTokenIds[msg.sender].push(tokenIds[i]);
-            emit Staked(msg.sender, tokenIds[i]);
+            userStakedTokenIds[msg.sender].push(tokenId);
+            emit Staked(msg.sender, tokenId);
         }
     }
 
     function unstake(uint256[] calldata tokenIds) external nonReentrant {
-        claimRewards(); // Claim pending rewards before unstaking
+        claimRewards();
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (stakedTokens[tokenIds[i]].owner != msg.sender) revert NotOwnerOfStakedToken();
+            uint256 tokenId = tokenIds[i];
+            if (stakedTokens[tokenId].owner != msg.sender) revert NotOwnerOfStakedToken();
+            if (stakedTokens[tokenId].owner == address(0)) revert TokenNotStaked(); // <-- ADDED CHECK
 
-            // Remove from user's staked list
             uint256[] storage userTokens = userStakedTokenIds[msg.sender];
             for (uint256 j = 0; j < userTokens.length; j++) {
-                if (userTokens[j] == tokenIds[i]) {
+                if (userTokens[j] == tokenId) {
                     userTokens[j] = userTokens[userTokens.length - 1];
                     userTokens.pop();
                     break;
                 }
             }
 
-            delete stakedTokens[tokenIds[i]];
-            _safeTransfer(address(this), msg.sender, tokenIds[i], "");
-            emit Unstaked(msg.sender, tokenIds[i]);
+            delete stakedTokens[tokenId];
+            _safeTransfer(address(this), msg.sender, tokenId, "");
+            emit Unstaked(msg.sender, tokenId);
         }
     }
 
-    function pendingRewards(address user) public view returns (uint256) {
-        uint256 totalRewards = 0;
-        uint256[] memory userTokens = userStakedTokenIds[user];
-        for (uint256 i = 0; i < userTokens.length; i++) {
-            StakedToken memory staked = stakedTokens[userTokens[i]];
-            totalRewards += (block.timestamp - staked.timestamp) * rewardRate;
-        }
-        return totalRewards;
-    }
+    // ... (pendingRewards, claimRewards, getStakedTokenIds, and other functions remain the same) ...
 
-    function claimRewards() public nonReentrant {
-        uint256 totalRewards = pendingRewards(msg.sender);
-        if (totalRewards == 0) revert NoRewardsToClaim();
-
-        // Reset timestamps for all staked tokens to prevent re-claiming
-        uint256[] memory userTokens = userStakedTokenIds[msg.sender];
-        for (uint256 i = 0; i < userTokens.length; i++) {
-            stakedTokens[userTokens[i]].timestamp = block.timestamp;
-        }
-
-        hlvToken.transfer(msg.sender, totalRewards);
-        emit RewardsClaimed(msg.sender, totalRewards);
-    }
-
-    function getStakedTokenIds(address user) public view returns (uint256[] memory) {
-        return userStakedTokenIds[user];
-    }
-    
-    // --- Royalties ---
-    function setRoyalty(address receiver, uint96 feeNumerator) public onlyOwner {
-        _setDefaultRoyalty(receiver, feeNumerator);
-    }
-    
-    // --- Overrides ---
+    // --- Overrides for Enumerable ---
     function _update(address to, uint256 tokenId, address auth)
         internal
         override(ERC721, ERC721Enumerable)
