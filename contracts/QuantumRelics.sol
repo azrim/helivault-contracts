@@ -23,6 +23,8 @@ contract QuantumRelics is ERC721, ERC721Enumerable, Ownable, ERC2981, Reentrancy
     error NotOwnerOfStakedToken();
     error NoRewardsToClaim();
     error NotOwnerOfNFT();
+    error TokenAlreadyStaked();
+    error TokenNotStaked();
 
     // --- State Variables ---
     enum SaleState { Paused, Presale, Public }
@@ -109,35 +111,39 @@ contract QuantumRelics is ERC721, ERC721Enumerable, Ownable, ERC2981, Reentrancy
     // --- Staking ---
     function stake(uint256[] calldata tokenIds) external nonReentrant {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (ownerOf(tokenIds[i]) != msg.sender) revert NotOwnerOfNFT();
-            _safeTransfer(msg.sender, address(this), tokenIds[i], "");
-            stakedTokens[tokenIds[i]] = StakedToken({
+            uint256 tokenId = tokenIds[i];
+            if (ownerOf(tokenId) != msg.sender) revert NotOwnerOfNFT();
+            if (stakedTokens[tokenId].owner != address(0)) revert TokenAlreadyStaked();
+
+            _safeTransfer(msg.sender, address(this), tokenId, "");
+            stakedTokens[tokenId] = StakedToken({
                 owner: msg.sender,
                 timestamp: block.timestamp
             });
-            userStakedTokenIds[msg.sender].push(tokenIds[i]);
-            emit Staked(msg.sender, tokenIds[i]);
+            userStakedTokenIds[msg.sender].push(tokenId);
+            emit Staked(msg.sender, tokenId);
         }
     }
 
     function unstake(uint256[] calldata tokenIds) external nonReentrant {
-        claimRewards(); // Claim pending rewards before unstaking
+        claimRewards();
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (stakedTokens[tokenIds[i]].owner != msg.sender) revert NotOwnerOfStakedToken();
+            uint256 tokenId = tokenIds[i];
+            if (stakedTokens[tokenId].owner != msg.sender) revert NotOwnerOfStakedToken();
+            if (stakedTokens[tokenId].owner == address(0)) revert TokenNotStaked();
 
-            // Remove from user's staked list
             uint256[] storage userTokens = userStakedTokenIds[msg.sender];
             for (uint256 j = 0; j < userTokens.length; j++) {
-                if (userTokens[j] == tokenIds[i]) {
+                if (userTokens[j] == tokenId) {
                     userTokens[j] = userTokens[userTokens.length - 1];
                     userTokens.pop();
                     break;
                 }
             }
 
-            delete stakedTokens[tokenIds[i]];
-            _safeTransfer(address(this), msg.sender, tokenIds[i], "");
-            emit Unstaked(msg.sender, tokenIds[i]);
+            delete stakedTokens[tokenId];
+            _safeTransfer(address(this), msg.sender, tokenId, "");
+            emit Unstaked(msg.sender, tokenId);
         }
     }
 
@@ -155,7 +161,6 @@ contract QuantumRelics is ERC721, ERC721Enumerable, Ownable, ERC2981, Reentrancy
         uint256 totalRewards = pendingRewards(msg.sender);
         if (totalRewards == 0) revert NoRewardsToClaim();
 
-        // Reset timestamps for all staked tokens to prevent re-claiming
         uint256[] memory userTokens = userStakedTokenIds[msg.sender];
         for (uint256 i = 0; i < userTokens.length; i++) {
             stakedTokens[userTokens[i]].timestamp = block.timestamp;
