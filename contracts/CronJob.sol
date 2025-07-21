@@ -1,28 +1,41 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.26;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+// Interface for the Chronos precompile
+interface IChronos {
+    function schedule(address to, uint256 value, uint256 gasLimit, uint64 executionTime, bytes calldata data) external returns (bytes32);
+    function cancel(bytes32 scheduledId) external;
+}
+
 contract CronJob is Ownable {
-    address public stakingContract;
-    uint256 public lastExecution;
-    uint24 public constant EXECUTION_INTERVAL = 24 hours;
+    // Address of the Chronos precompile on Helios
+    IChronos constant chronos = IChronos(0x000000000000000000000000000000000000008A);
 
-    constructor() Ownable(msg.sender) {
-        lastExecution = block.timestamp;
+    event JobScheduled(bytes32 indexed jobId, address indexed target, uint64 executionTime);
+    event JobCancelled(bytes32 indexed jobId);
+
+    constructor() Ownable(msg.sender) {}
+
+    function scheduleJob(
+        address _target,
+        uint64 _executionTime, // Unix timestamp for when the job should run
+        bytes calldata _data
+    ) external onlyOwner returns (bytes32) {
+        // Ensure the execution time is in the future
+        require(_executionTime > block.timestamp, "Execution time must be in the future");
+
+        // Schedule the transaction with Chronos
+        // We'll provide a generous gas limit, but this could be estimated more precisely
+        bytes32 jobId = chronos.schedule(_target, 0, 200000, _executionTime, _data);
+
+        emit JobScheduled(jobId, _target, _executionTime);
+        return jobId;
     }
 
-    function setStakingContract(address stakingContractAddress) external onlyOwner {
-        stakingContract = stakingContractAddress;
-    }
-
-    function execute() external {
-        require(
-            block.timestamp >= lastExecution + EXECUTION_INTERVAL,
-            "CronJob: Not time to execute yet"
-        );
-        (bool success, ) = stakingContract.call(abi.encodeWithSignature("distributeRewardsDaily()"));
-        require(success, "CronJob: Failed to call distributeRewardsDaily");
-        lastExecution = block.timestamp;
+    function cancelJob(bytes32 _jobId) external onlyOwner {
+        chronos.cancel(_jobId);
+        emit JobCancelled(_jobId);
     }
 }

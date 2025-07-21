@@ -1,0 +1,31 @@
+{
+  "DailyCheckIn": {
+    "address": "0x2133bcB200F12014eb1415e0b1D62B252e7dC38C",
+    "args": []
+  },
+  "HelivaultCollections": {
+    "address": "0x79B521277A664ceF5ab4dd34EE74aa24E1eaE33c",
+    "args": [
+      "Solar Shards",
+      "SSH",
+      "https://bafybeih3lbjbvfspg4y4fjjxwizfjcmgav2gnepxu6zs3svfuniefqhruu.ipfs.w3s.link/",
+      "https://bafybeih3lbjbvfspg4y4fjjxwizfjcmgav2gnepxu6zs3svfuniefqhruu.ipfs.w3s.link/metadata.json",
+      1000,
+      10000,
+      "100000000000000000"
+    ]
+  },
+  "HelivaultToken": {
+    "address": "0x4f1D4359270f41F4bC9097169083c267d898459a",
+    "args": [
+      "0xe0bECc917eC26961BF40aD87650ec0878daf950D"
+    ]
+  },
+  "Staking": {
+    "address": "0x83dE68138D755b05F59cf4B521BdBcCd4f35306a",
+    "args": [
+      "0xE3DA1295fE5C4f5D41e6c26E9ae2dd6047311995",
+      "0xE3DA1295fE5C4f5D41e6c26E9ae2dd6047311995"
+    ]
+  }
+}

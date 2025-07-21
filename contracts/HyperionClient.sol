@@ -1,35 +1,26 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.26;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-interface IHyperion {
-    function query(string calldata chain, string calldata target, string calldata data) external view returns (bytes memory);
-}
-
 contract HyperionClient is Ownable {
-    IHyperion public hyperion;
+    uint256 public lastExecutionTimestamp;
+    address public lastCaller;
 
-    event DataQueried(string chain, string target, string data);
-    event DataValidated(bool isValid);
+    event JobExecuted(address indexed caller, uint256 timestamp);
 
-    constructor() Ownable(msg.sender) {
+    constructor() Ownable(msg.sender) {}
+
+    // This is the function that the CronJob will call
+    function execute() external {
+        lastExecutionTimestamp = block.timestamp;
+        lastCaller = msg.sender;
+        emit JobExecuted(msg.sender, block.timestamp);
     }
 
-    function setHyperion(address _hyperion) external onlyOwner {
-        hyperion = IHyperion(_hyperion);
-    }
-
-    function queryData(string calldata chain, string calldata target, string calldata data) external {
-        hyperion.query(chain, target, data);
-        emit DataQueried(chain, target, data);
-    }
-
-    function validateData(bytes memory /*data*/) external returns (bool) {
-        // In a real-world scenario, this function would contain logic
-        // to validate the data returned by the Hyperion oracle.
-        // For simplicity, we'll just return true.
-        emit DataValidated(true);
-        return true;
+    // Allow the owner to withdraw any funds sent to this contract
+    function withdraw() external onlyOwner {
+        (bool success, ) = owner().call{value: address(this).balance}("");
+        require(success, "Transfer failed.");
     }
 }

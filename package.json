@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "deploy": "npx hardhat run scripts/deploy.js --network helios",
-    "deploy:all": "npx hardhat run scripts/deploy_all.js --network helios",
-    "deploy:daily": "npx hardhat run scripts/deploy_daily_check_in.js --network helios"
+    "deploy": "npx hardhat run scripts/deploy_all.js --network helios"
   },
   "keywords": [],
   "author": "",

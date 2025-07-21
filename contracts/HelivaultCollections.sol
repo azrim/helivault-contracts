@@ -1,47 +1,60 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.26;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract HelivaultNFT is
+contract HelivaultCollections is
     ERC721Enumerable,
     ERC721Burnable,
     ERC721Pausable,
     ERC2981,
-    Ownable
+    Ownable,
+    ReentrancyGuard
 {
-    uint256 public tokenId;
     uint256 public maxSupply;
-    uint256 public mintPrice = 0.01 ether;
+    uint256 public mintPrice;
     string private _customBaseURI;
     string private _hiddenURI;
     bool public revealed;
 
     constructor(
+        string memory name_,
+        string memory symbol_,
         string memory baseURI_,
         string memory hiddenURI_,
         uint96 royaltyBips,
-        uint256 maxSupply_
-    ) ERC721("Helivault", "HLV") Ownable(msg.sender) {
+        uint256 maxSupply_,
+        uint256 initialMintPrice_
+    ) ERC721(name_, symbol_) Ownable(msg.sender) {
         _customBaseURI = baseURI_;
         _hiddenURI = hiddenURI_;
         maxSupply = maxSupply_;
         _setDefaultRoyalty(msg.sender, royaltyBips);
+        mintPrice = initialMintPrice_;
         revealed = false;
     }
 
-    function mint() external payable {
-        require(tokenId < maxSupply, "Max supply reached");
-        require(msg.value >= mintPrice, "Insufficient payment");
+    function mint(uint256 quantity) external payable {
+        require(totalSupply() + quantity <= maxSupply, "Max supply reached");
+        require(msg.value >= mintPrice * quantity, "Insufficient payment");
 
-        tokenId++;
-        _safeMint(msg.sender, tokenId);
+        for (uint256 i = 0; i < quantity; i++) {
+            _safeMint(msg.sender, totalSupply() + 1);
+        }
     }
 
+    function airdrop(address[] calldata recipients) external onlyOwner {
+        require(totalSupply() + recipients.length <= maxSupply, "Airdrop exceeds max supply");
+        for (uint256 i = 0; i < recipients.length; i++) {
+            _safeMint(recipients[i], totalSupply() + 1);
+        }
+    }
+    
     function reveal() external onlyOwner {
         revealed = true;
     }
@@ -53,13 +66,22 @@ contract HelivaultNFT is
     function unpause() external onlyOwner {
         _unpause();
     }
-
+    
     function setMintPrice(uint256 newPrice) external onlyOwner {
         mintPrice = newPrice;
     }
 
-    function withdraw() external onlyOwner {
-        payable(owner()).transfer(address(this).balance);
+    function setBaseURI(string memory baseURI_) external onlyOwner {
+        _customBaseURI = baseURI_;
+    }
+
+    function setRoyalty(address receiver, uint96 feeNumerator) external onlyOwner {
+        _setDefaultRoyalty(receiver, feeNumerator);
+    }
+    
+    function withdraw() external onlyOwner nonReentrant {
+        (bool success, ) = owner().call{value: address(this).balance}("");
+        require(success, "Transfer failed.");
     }
 
     function _baseURI() internal view override returns (string memory) {

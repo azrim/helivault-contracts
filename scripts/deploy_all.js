@@ -1,51 +1,82 @@
-// scripts/deploy_all.js
-
 const { ethers } = require("hardhat");
+const fs = require("fs");
+const path = require("path");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Deploying contracts with the account:", deployer.address);
 
-  // --- Deployment Configuration ---
-  const royaltyReceiver = deployer.address; // The address that will receive royalties
-  const royaltyFeeNumerator = 500; // 5% royalty
-  const tokenURI = "ipfs://bafybeih3lbjbvfspg4y4fjjxwizfjcmgav2gnepxu6zs3svfuniefqhruu"; // Replace with your single metadata file CID
+  const deployments = {};
+
+  // Deploy DailyCheckIn
+  const DailyCheckIn = await ethers.getContractFactory("DailyCheckIn");
+  const dailyCheckIn = await DailyCheckIn.deploy();
+  await dailyCheckIn.waitForDeployment();
+  deployments.DailyCheckIn = {
+    address: await dailyCheckIn.getAddress(),
+    args: [],
+  };
+  console.log("DailyCheckIn deployed to:", deployments.DailyCheckIn.address);
+
+  // Deploy HelivaultCollections
+  const HelivaultCollections = await ethers.getContractFactory("HelivaultCollections");
+  const collectionArgs = [
+    "Solar Shards",
+    "SSH",
+    "https://bafybeih3lbjbvfspg4y4fjjxwizfjcmgav2gnepxu6zs3svfuniefqhruu.ipfs.w3s.link/",
+    "https://bafybeih3lbjbvfspg4y4fjjxwizfjcmgav2gnepxu6zs3svfuniefqhruu.ipfs.w3s.link/metadata.json",
+    1000, // 10%
+    10000,
+    ethers.parseEther("0.1"),
+  ];
+  const helivaultCollections = await HelivaultCollections.deploy(...collectionArgs);
+  await helivaultCollections.waitForDeployment();
+  deployments.HelivaultCollections = {
+    address: await helivaultCollections.getAddress(),
+    args: collectionArgs,
+  };
+  console.log("HelivaultCollections deployed to:", deployments.HelivaultCollections.address);
 
   // Deploy HelivaultToken
-  console.log("\nDeploying HelivaultToken contract...");
   const HelivaultToken = await ethers.getContractFactory("HelivaultToken");
-  const hlvToken = await HelivaultToken.deploy();
-  await hlvToken.waitForDeployment();
-  const hlvTokenAddress = await hlvToken.getAddress();
-  console.log(`✅ HelivaultToken deployed to: ${hlvTokenAddress}`);
+  const helivaultToken = await HelivaultToken.deploy(deployer.address);
+  await helivaultToken.waitForDeployment();
+  deployments.HelivaultToken = {
+    address: await helivaultToken.getAddress(),
+    args: [deployer.address],
+  };
+  console.log("HelivaultToken deployed to:", deployments.HelivaultToken.address);
 
-  // Deploy QuantumRelics NFT
-  console.log("\nDeploying QuantumRelics contract...");
-  const QuantumRelics = await ethers.getContractFactory("QuantumRelics");
-  const quantumRelics = await QuantumRelics.deploy(
-    hlvTokenAddress,
-    royaltyReceiver,
-    royaltyFeeNumerator
+  // Deploy Staking
+  const Staking = await ethers.getContractFactory("Staking");
+  const stakingArgs = [
+    deployments.HelivaultToken.address,
+    deployments.HelivaultToken.address, // Using HVT for rewards as well
+  ];
+  const staking = await Staking.deploy(...stakingArgs);
+  await staking.waitForDeployment();
+  deployments.Staking = {
+    address: await staking.getAddress(),
+    args: stakingArgs,
+  };
+  console.log("Staking deployed to:", deployments.Staking.address);
+
+  // Save deployment information
+  const deploymentsPath = path.join(__dirname, "..", "deployments.json");
+  fs.writeFileSync(
+    deploymentsPath,
+    JSON.stringify(
+      deployments,
+      (key, value) => (typeof value === "bigint" ? value.toString() : value),
+      2
+    )
   );
-  await quantumRelics.waitForDeployment();
-  const nftAddress = await quantumRelics.getAddress();
-  console.log(`✅ QuantumRelics NFT deployed to: ${nftAddress}`);
-
-  // --- Post-Deployment Configuration ---
-  console.log("\nConfiguring QuantumRelics contract...");
-  
-  // Set the single token URI for the entire collection
-  await quantumRelics.setTokenURI(tokenURI);
-  console.log("-> Token URI set to:", tokenURI);
-  
-  // Start the sale in a state
-  await quantumRelics.setSaleState(2); // 0 = Paused, 1 = Presale, 2 = Public
-  console.log("-> Sale state set to Public.");
-
-  console.log("\n🚀 Deployment and configuration complete! 🚀");
+  console.log("Deployment information saved to", deploymentsPath);
 }
 
-main().catch((error) => {
-  console.error("❌ Deployment failed:", error);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
