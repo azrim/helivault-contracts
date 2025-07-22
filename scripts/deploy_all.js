@@ -47,19 +47,16 @@ async function main() {
   };
   console.log("HelivaultToken deployed to:", deployments.HelivaultToken.address);
 
-  // Deploy Staking
-  const Staking = await ethers.getContractFactory("Staking");
-  const stakingArgs = [
-    deployments.HelivaultToken.address,
-    deployments.HelivaultToken.address, // Using HVT for rewards as well
-  ];
-  const staking = await Staking.deploy(...stakingArgs);
-  await staking.waitForDeployment();
-  deployments.Staking = {
-    address: await staking.getAddress(),
-    args: stakingArgs,
+  // Deploy Lottery
+  const Lottery = await ethers.getContractFactory("Lottery");
+  const lotteryArgs = [ethers.parseEther("0.1")]; // 0.1 HLS entry price
+  const lottery = await Lottery.deploy(...lotteryArgs);
+  await lottery.waitForDeployment();
+  deployments.Lottery = {
+    address: await lottery.getAddress(),
+    args: lotteryArgs,
   };
-  console.log("Staking deployed to:", deployments.Staking.address);
+  console.log("Lottery deployed to:", deployments.Lottery.address);
 
   // Save deployment information
   const deploymentsPath = path.join(__dirname, "..", "deployments.json");
