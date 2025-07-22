@@ -7,7 +7,7 @@ module.exports = {
     helios: {
       url: "https://testnet1.helioschainlabs.org",
       chainId: 42000,
-      accounts: [process.env.PRIVATE_KEY]
-    }
-  }
+      accounts: [process.env.PRIVATE_KEY],
+    },
+  },
 };

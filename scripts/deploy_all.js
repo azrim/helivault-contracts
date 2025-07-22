@@ -19,7 +19,9 @@ async function main() {
   console.log("DailyCheckIn deployed to:", deployments.DailyCheckIn.address);
 
   // Deploy HelivaultCollections
-  const HelivaultCollections = await ethers.getContractFactory("HelivaultCollections");
+  const HelivaultCollections = await ethers.getContractFactory(
+    "HelivaultCollections",
+  );
   const collectionArgs = [
     "Solar Shards",
     "SSH",
@@ -29,13 +31,18 @@ async function main() {
     10000,
     ethers.parseEther("0.1"),
   ];
-  const helivaultCollections = await HelivaultCollections.deploy(...collectionArgs);
+  const helivaultCollections = await HelivaultCollections.deploy(
+    ...collectionArgs,
+  );
   await helivaultCollections.waitForDeployment();
   deployments.HelivaultCollections = {
     address: await helivaultCollections.getAddress(),
     args: collectionArgs,
   };
-  console.log("HelivaultCollections deployed to:", deployments.HelivaultCollections.address);
+  console.log(
+    "HelivaultCollections deployed to:",
+    deployments.HelivaultCollections.address,
+  );
 
   // Deploy HelivaultToken
   const HelivaultToken = await ethers.getContractFactory("HelivaultToken");
@@ -45,7 +52,10 @@ async function main() {
     address: await helivaultToken.getAddress(),
     args: [deployer.address],
   };
-  console.log("HelivaultToken deployed to:", deployments.HelivaultToken.address);
+  console.log(
+    "HelivaultToken deployed to:",
+    deployments.HelivaultToken.address,
+  );
 
   // Deploy Lottery
   const Lottery = await ethers.getContractFactory("Lottery");
@@ -65,8 +75,8 @@ async function main() {
     JSON.stringify(
       deployments,
       (key, value) => (typeof value === "bigint" ? value.toString() : value),
-      2
-    )
+      2,
+    ),
   );
   console.log("Deployment information saved to", deploymentsPath);
 }

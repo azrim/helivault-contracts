@@ -20,7 +20,7 @@ async function main() {
   const lotteryArgs = [ethers.parseEther("0.1")]; // 0.1 HLS entry price
   const lottery = await Lottery.deploy(...lotteryArgs);
   await lottery.waitForDeployment();
-  
+
   // Update the Lottery deployment info
   deployments.Lottery = {
     address: await lottery.getAddress(),
@@ -34,8 +34,8 @@ async function main() {
     JSON.stringify(
       deployments,
       (key, value) => (typeof value === "bigint" ? value.toString() : value),
-      2
-    )
+      2,
+    ),
   );
   console.log("Deployment information updated in", deploymentsPath);
 }

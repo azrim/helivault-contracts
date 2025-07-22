@@ -5,7 +5,10 @@ const path = require("path");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  console.log("Deploying CronJob contracts with the account:", deployer.address);
+  console.log(
+    "Deploying CronJob contracts with the account:",
+    deployer.address,
+  );
 
   const deployments = {};
 
@@ -17,7 +20,10 @@ async function main() {
     address: await hyperionClient.getAddress(),
     args: [],
   };
-  console.log("HyperionClient deployed to:", deployments.HyperionClient.address);
+  console.log(
+    "HyperionClient deployed to:",
+    deployments.HyperionClient.address,
+  );
 
   // Deploy CronJob
   const CronJob = await ethers.getContractFactory("CronJob");
@@ -36,8 +42,8 @@ async function main() {
     JSON.stringify(
       deployments,
       (key, value) => (typeof value === "bigint" ? value.toString() : value),
-      2
-    )
+      2,
+    ),
   );
   console.log("Cron deployment information saved to", deploymentsPath);
 }

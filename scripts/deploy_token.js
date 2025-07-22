@@ -10,7 +10,7 @@ async function main() {
   const HelivaultToken = await ethers.getContractFactory("HelivaultToken");
   const helivaultToken = await HelivaultToken.deploy(deployer.address);
   await helivaultToken.waitForDeployment();
-  
+
   const tokenAddress = await helivaultToken.getAddress();
   console.log("HelivaultToken deployed to:", tokenAddress);
 
@@ -31,10 +31,13 @@ async function main() {
     JSON.stringify(
       deployments,
       (key, value) => (typeof value === "bigint" ? value.toString() : value),
-      2
-    )
+      2,
+    ),
   );
-  console.log("Deployment information for HelivaultToken updated in", deploymentsPath);
+  console.log(
+    "Deployment information for HelivaultToken updated in",
+    deploymentsPath,
+  );
 }
 
 main()
