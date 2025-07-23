@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract HelivaultCollections is
     ERC721Enumerable,
@@ -16,6 +17,7 @@ contract HelivaultCollections is
     Ownable,
     ReentrancyGuard
 {
+    IERC20 public hvtToken;
     uint256 public maxSupply;
     uint256 public mintPrice;
     string private _customBaseURI;
@@ -23,6 +25,7 @@ contract HelivaultCollections is
     bool public revealed;
 
     constructor(
+        address hvtTokenAddress_,
         string memory name_,
         string memory symbol_,
         string memory baseURI_,
@@ -31,6 +34,7 @@ contract HelivaultCollections is
         uint256 maxSupply_,
         uint256 initialMintPrice_
     ) ERC721(name_, symbol_) Ownable(msg.sender) {
+        hvtToken = IERC20(hvtTokenAddress_);
         _customBaseURI = baseURI_;
         _hiddenURI = hiddenURI_;
         maxSupply = maxSupply_;
@@ -39,9 +43,10 @@ contract HelivaultCollections is
         revealed = false;
     }
 
-    function mint(uint256 quantity) external payable {
+    function mint(uint256 quantity) external {
         require(totalSupply() + quantity <= maxSupply, "Max supply reached");
-        require(msg.value >= mintPrice * quantity, "Insufficient payment");
+        uint256 totalCost = mintPrice * quantity;
+        require(hvtToken.transferFrom(msg.sender, address(this), totalCost), "HVT transfer failed");
 
         for (uint256 i = 0; i < quantity; i++) {
             _safeMint(msg.sender, totalSupply() + 1);
@@ -75,6 +80,8 @@ contract HelivaultCollections is
         _customBaseURI = baseURI_;
     }
 
+
+
     function setRoyalty(address receiver, uint96 feeNumerator) external onlyOwner {
         _setDefaultRoyalty(receiver, feeNumerator);
     }
@@ -82,6 +89,11 @@ contract HelivaultCollections is
     function withdraw() external onlyOwner nonReentrant {
         (bool success, ) = owner().call{value: address(this).balance}("");
         require(success, "Transfer failed.");
+    }
+
+    function withdrawHVT() external onlyOwner nonReentrant {
+        uint256 balance = hvtToken.balanceOf(address(this));
+        require(hvtToken.transfer(owner(), balance), "HVT transfer failed");
     }
 
     function _baseURI() internal view override returns (string memory) {

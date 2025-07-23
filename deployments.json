@@ -1,37 +1,39 @@
 {
-  "DailyCheckIn": {
-    "address": "0x2133bcB200F12014eb1415e0b1D62B252e7dC38C",
-    "args": []
+  "HelivaultToken": {
+    "address": "0xd77D39A526c1ad181827E1Dae918566dD7CAd9d5",
+    "args": [
+      "0xe0bECc917eC26961BF40aD87650ec0878daf950D"
+    ]
   },
   "HelivaultCollections": {
-    "address": "0x79B521277A664ceF5ab4dd34EE74aa24E1eaE33c",
+    "address": "0x6c4Be5128969F1a15417b8B77BB9F3f6e829A546",
     "args": [
+      "0xd77D39A526c1ad181827E1Dae918566dD7CAd9d5",
       "Solar Shards",
       "SSH",
       "https://bafybeih3lbjbvfspg4y4fjjxwizfjcmgav2gnepxu6zs3svfuniefqhruu.ipfs.w3s.link/",
       "https://bafybeih3lbjbvfspg4y4fjjxwizfjcmgav2gnepxu6zs3svfuniefqhruu.ipfs.w3s.link/metadata.json",
       1000,
       10000,
-      "100000000000000000"
+      "50000000000000000"
     ]
   },
-  "HelivaultToken": {
-    "address": "0x4f1D4359270f41F4bC9097169083c267d898459a",
-    "args": [
-      "0xe0bECc917eC26961BF40aD87650ec0878daf950D"
-    ]
-  },
-  "Staking": {
-    "address": "0x83dE68138D755b05F59cf4B521BdBcCd4f35306a",
-    "args": [
-      "0xE3DA1295fE5C4f5D41e6c26E9ae2dd6047311995",
-      "0xE3DA1295fE5C4f5D41e6c26E9ae2dd6047311995"
-    ]
+  "DailyCheckIn": {
+    "address": "0xF15fc91CCc6451497598bcD0C4080Edcad3279F3",
+    "args": []
   },
   "Lottery": {
-    "address": "0xac3445d5c3E1977594060212074b57b51a95C192",
+    "address": "0xF363DeCD595e337135E4405e8Ef353C47D412a85",
     "args": [
       "100000000000000000"
     ]
+  },
+  "HyperionClient": {
+    "address": "0x85B4CfF0fAD89b9b29B74e4adDcE67F8eEb96dc3",
+    "args": []
+  },
+  "CronJob": {
+    "address": "0xd1c4d69b9D649F8a8672D1277338Fa9d4De04De9",
+    "args": []
   }
 }
