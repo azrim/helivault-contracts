@@ -18,22 +18,26 @@ contract Lottery is Ownable, ReentrancyGuard {
     function enter() external payable nonReentrant {
         require(msg.value == entryPrice, "Incorrect entry price");
 
-        // --- Tiered Payout Logic ---
-        // This is pseudo-random and not suitable for a production mainnet.
+        // --- New Tiered Payout Logic ---
         uint256 random = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, msg.sender)));
         uint256 payoutAmount;
+        uint256 prizePool = address(this).balance;
 
         // Determine payout based on tiers
         uint256 tier = random % 1000; // Use a scale of 1000 for probability
 
-        if (tier == 0) { // 1 in 1000 chance (0.1%)
-            payoutAmount = entryPrice * 25; // Jackpot: 25x
-        } else if (tier < 21) { // 20 in 1000 chance (2%)
-            payoutAmount = entryPrice * 3; // Big Win: 3x
-        } else if (tier < 121) { // 100 in 1000 chance (10%)
-            payoutAmount = (entryPrice * 3) / 2; // Nice Profit: 1.5x
-        } else { // ~88% chance
-            payoutAmount = entryPrice / 2; // Consolation: 0.5x
+        if (tier < 10) { // 10 in 1000 chance (1%)
+            // Jackpot: 50% of the prize pool
+            payoutAmount = prizePool / 2;
+        } else if (tier < 110) { // 100 in 1000 chance (10%)
+            // Gold: 10% of the prize pool
+            payoutAmount = prizePool / 10;
+        } else if (tier < 360) { // 250 in 1000 chance (25%)
+            // Silver: 2.5% of the prize pool (prizePool / 40)
+            payoutAmount = prizePool / 40;
+        } else { // ~64% chance
+            // Consolation: 0.075 HLS fixed
+            payoutAmount = 75 * 10**15; // 0.075 ether
         }
 
         // Ensure the contract has enough funds before paying out
