@@ -29,25 +29,27 @@ contract Lottery is Ownable, ReentrancyGuard {
         if (tier < 10) { // 10 in 1000 chance (1%)
             // Jackpot: 50% of the prize pool
             payoutAmount = prizePool / 2;
-        } else if (tier < 110) { // 100 in 1000 chance (10%)
+        } else if (tier < 60) { // 50 in 1000 chance (5%)
             // Gold: 10% of the prize pool
             payoutAmount = prizePool / 10;
-        } else if (tier < 360) { // 250 in 1000 chance (25%)
+        } else if (tier < 210) { // 150 in 1000 chance (15%)
             // Silver: 2.5% of the prize pool (prizePool / 40)
             payoutAmount = prizePool / 40;
-        } else { // ~64% chance
+        } else { // 79% chance
             // Consolation: 0.075 HLS fixed
             payoutAmount = 75 * 10**15; // 0.075 ether
         }
 
         // Ensure the contract has enough funds before paying out
-        if (address(this).balance >= payoutAmount && payoutAmount > 0) {
-            (bool success, ) = msg.sender.call{value: payoutAmount}("");
-            require(success, "Transfer failed.");
-            
+        if (payoutAmount > 0) {
             lastWinner = msg.sender;
             lastWinnerAmount = payoutAmount;
             emit WinnerPaid(msg.sender, payoutAmount);
+
+            if (address(this).balance >= payoutAmount) {
+                (bool success, ) = msg.sender.call{value: payoutAmount}("");
+                require(success, "Transfer failed.");
+            }
         }
         // If the contract is out of funds, the player's entry fee is kept,
         // but no prize is paid out. The owner should fund the contract.
